@@ -4,18 +4,10 @@ on:
   release:
     types: [published]
 
-env:
-  CUSTOM_IMAGE_NAME: pippo
-
 jobs:
   docker:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     if: github.event.release.target_commitish == 'develop'
-    
-    # Aggiungi i permessi espliciti
-    permissions:
-      contents: read
-      packages: write
     
     steps:
       - name: Checkout code
@@ -26,16 +18,6 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
-      - name: Set Custom Image Name
-        id: image_name
-        run: |
-            # Base image name
-            BASE_NAME=ghcr.io/${{ github.repository_owner }}/${CUSTOM_IMAGE_NAME}-test
-            # Crea i tag
-            TAGS="${BASE_NAME}:${{ github.event.release.tag_name }}"
-            echo "tags=${TAGS}" >> $GITHUB_OUTPUT
-            echo "Generated tags: ${TAGS}"
-
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v2
         with:
@@ -43,9 +25,20 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Prepare Docker Metadata
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: |
+            ghcr.io/${{ github.repository }}
+          tags: |
+            type=ref,event=tag
+            type=raw,value=latest,enable={{is_default_branch}}
+
       - name: Build and push
         uses: docker/build-push-action@v4
         with:
           context: .
           push: true
-          tags: ${{ steps.image_name.outputs.tags }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
