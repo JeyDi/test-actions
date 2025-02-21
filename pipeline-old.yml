@@ -6,12 +6,32 @@ on:
 
 env:
   CUSTOM_IMAGE_NAME: pippo
+  TARGET_ENVIRONMENT: develop
 
 jobs:
-  docker:
+  # docker:
+  #   runs-on: ubuntu-22.04
+  #   if: github.event.release.target_commitish == '${{env.TARGET_ENVIRONMENT}}'
+  check_environment:
     runs-on: ubuntu-22.04
-    if: github.event.release.target_commitish == 'develop'
-    
+    outputs:
+      should_run: ${{ steps.check.outputs.should_run }}
+    steps:
+      - id: check
+        run: |
+          if [[ "${{ github.event.release.target_commitish }}" == "${{env.TARGET_ENVIRONMENT}}" ]]; then
+            echo "should_run=true" >> $GITHUB_OUTPUT
+            echo "✅ Release is targeting ${{env.TARGET_ENVIRONMENT}} branch - proceeding with deployment"
+          else
+            echo "should_run=false" >> $GITHUB_OUTPUT
+            echo "ℹ️ Release is not targeting ${{env.TARGET_ENVIRONMENT}} branch - skipping deployment"
+          fi
+
+  docker:
+    needs: check_environment
+    if: needs.check_environment.outputs.should_run == 'true'
+    runs-on: ubuntu-22.04
+
     permissions:
       contents: read
       packages: write
