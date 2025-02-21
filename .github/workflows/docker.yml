@@ -12,7 +12,6 @@ jobs:
     runs-on: ubuntu-22.04
     if: github.event.release.target_commitish == 'develop'
     
-    # Aggiungi i permessi espliciti
     permissions:
       contents: read
       packages: write
@@ -30,10 +29,11 @@ jobs:
         id: image_name
         run: |
             # Base image name
-            BASE_NAME=ghcr.io/${{ github.repository_owner }}/${CUSTOM_IMAGE_NAME}-test
+            BASE_NAME=ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}-${CUSTOM_IMAGE_NAME}-test
             # Crea i tag
             TAGS="${BASE_NAME}:${{ github.event.release.tag_name }}"
-            echo "tags=${TAGS}" >> $GITHUB_OUTPUT
+            echo "tags=${echo $TAGS | tr '[:upper:]' '[:lower:]'}" >> $GITHUB_OUTPUT
+            echo "tags=${echo $TAGS | tr '[:upper:]' '[:lower:]'}" >> $GITHUB_ENV
             echo "Generated tags: ${TAGS}"
 
       - name: Login to GitHub Container Registry
@@ -48,4 +48,5 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ steps.image_name.outputs.tags }}
+          # tags: ${{ steps.image_name.outputs.tags }}
+          tags: ${ env.TAGS }
