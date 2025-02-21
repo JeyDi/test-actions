@@ -52,4 +52,5 @@ jobs:
           tags: ${{ env.TAGS }}
       
       - name: Echo latest image and tags
-        run: echo "Latest image and tags: ${{ env.TAGS }}"
+        run: |
+          echo "Latest image and tags: ${{ env.TAGS }}"
